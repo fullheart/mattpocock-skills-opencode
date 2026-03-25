@@ -1,0 +1,30 @@
+name: Test Install Script
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Bats
+        uses: bats-core/bats-action@1.5.4
+        with:
+          bats-version: '1.10.0'
+
+      - name: Run install script tests
+        run: bats tests/install.bats
+
+      - name: Verify all 17 skills exist
+        run: |
+          skill_count=$(find . -maxdepth 1 -type d -name "[a-z]*" ! -name ".*" ! -name "tests" | wc -l)
+          echo "Found $skill_count skill directories"
+          if [ "$skill_count" -ne 17 ]; then
+            echo "Expected 17 skills, found $skill_count"
+            exit 1
+          fi
