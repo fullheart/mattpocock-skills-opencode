@@ -38,11 +38,6 @@ for skill_dir in "$REPO_DIR"/*/; do
   # Get skill name from directory name
   skill_name=$(basename "$skill_dir")
 
-  # Skip tests directory
-  if [[ "$skill_name" == "tests" ]]; then
-    continue
-  fi
-
   # Skip hidden directories
   if [[ "$skill_name" == .* ]]; then
     continue
