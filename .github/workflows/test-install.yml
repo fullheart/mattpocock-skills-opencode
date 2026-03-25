@@ -1,9 +1,6 @@
 name: Test Install Script
 
 on:
-  push:
-    branches:
-      - '**'
   pull_request:
     branches:
       - '**'
