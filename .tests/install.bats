@@ -183,11 +183,15 @@ teardown() {
 
 @test "install.sh clones repository when run standalone (not in skills repo)" {
   # Create a temporary directory outside the repo (no git repo)
+  # Copy the script there so BASH_SOURCE[0] resolves outside the repo, triggering the clone path
   export TEMP_DIR=$(mktemp -d)
+  cp "$REPO_ROOT/install.sh" "$TEMP_DIR/install.sh"
+  # Use a local file:// URL to avoid network access in tests
+  export SKILLS_CLONE_URL="file://$REPO_ROOT"
   cd "$TEMP_DIR"
 
-  # Run install script from outside the repo
-  run "$REPO_ROOT/install.sh"
+  # Run the copied install script (BASH_SOURCE[0] resolves to TEMP_DIR, not REPO_ROOT)
+  run "$TEMP_DIR/install.sh"
 
   # Assert: Script succeeds
   [ "$status" -eq 0 ]
@@ -198,20 +202,28 @@ teardown() {
   # Assert: At least one skill symlinked (tdd should exist)
   [ -L "$HOME/.config/opencode/skills/tdd" ]
 
-  # Assert: Symlink points to actual directory (cloned)
+  # Assert: Symlink points to actual directory (cloned to stable location)
   [ -d "$HOME/.config/opencode/skills/tdd" ]
 
-  # Cleanup
+  # Assert: Clone message was shown
+  [[ "$output" == *"Cloning repository"* ]]
+
+  # Cleanup (stable clone dir is under TEST_HOME and cleaned by teardown)
+  unset SKILLS_CLONE_URL
   rm -rf "$TEMP_DIR"
 }
 
 @test "install.sh clones repository when run standalone with --local flag" {
   # Create a temporary directory outside the repo (no git repo)
+  # Copy the script there so BASH_SOURCE[0] resolves outside the repo, triggering the clone path
   export TEMP_DIR=$(mktemp -d)
+  cp "$REPO_ROOT/install.sh" "$TEMP_DIR/install.sh"
+  # Use a local file:// URL to avoid network access in tests
+  export SKILLS_CLONE_URL="file://$REPO_ROOT"
   cd "$TEMP_DIR"
 
-  # Run install script with --local flag from outside the repo
-  run "$REPO_ROOT/install.sh" --local
+  # Run the copied install script with --local flag
+  run "$TEMP_DIR/install.sh" --local
 
   # Assert: Script succeeds
   [ "$status" -eq 0 ]
@@ -225,7 +237,8 @@ teardown() {
   # Assert: Symlink points to actual directory
   [ -d "$TEMP_DIR/.opencode/skills/tdd" ]
 
-  # Cleanup
+  # Cleanup (stable clone dir is under TEST_HOME and cleaned by teardown)
+  unset SKILLS_CLONE_URL
   rm -rf "$TEMP_DIR"
 }
 
@@ -252,13 +265,17 @@ teardown() {
 
 @test "install.sh clones when in different git repository" {
   # Create a temporary directory with a git repo that has a different remote
+  # Copy the script there so BASH_SOURCE[0] resolves to that dir, triggering the clone check
   export TEMP_DIR=$(mktemp -d)
+  cp "$REPO_ROOT/install.sh" "$TEMP_DIR/install.sh"
+  # Use a local file:// URL to avoid network access in tests
+  export SKILLS_CLONE_URL="file://$REPO_ROOT"
   cd "$TEMP_DIR"
   git init
   git remote add origin https://github.com/someone/another-repo.git
 
-  # Run install script - should clone because remote doesn't match
-  run "$REPO_ROOT/install.sh"
+  # Run the copied install script - should clone because remote doesn't match
+  run "$TEMP_DIR/install.sh"
 
   # Assert: Script succeeds
   [ "$status" -eq 0 ]
@@ -272,6 +289,10 @@ teardown() {
   # Assert: Symlink points to actual directory (cloned)
   [ -d "$HOME/.config/opencode/skills/tdd" ]
 
-  # Cleanup
+  # Assert: Clone message was shown
+  [[ "$output" == *"Cloning repository"* ]]
+
+  # Cleanup (stable clone dir is under TEST_HOME and cleaned by teardown)
+  unset SKILLS_CLONE_URL
   rm -rf "$TEMP_DIR"
 }

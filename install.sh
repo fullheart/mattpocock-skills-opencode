@@ -5,6 +5,9 @@
 
 set -e
 
+# Repository slug used for remote URL matching and default clone URL
+REPO_SLUG="fullheart/mattpocock-skills-opencode"
+
 # Parse arguments
 LOCAL_MODE=false
 
@@ -31,15 +34,19 @@ if [[ -n "$SKILLS_REPO_DIR" ]]; then
   REPO_DIR="$SKILLS_REPO_DIR"
 else
   REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-fi
 
-# Check if we're running standalone (not from a cloned repo)
-# Verify we are in the correct Git repository by checking the remote URL
-if ! git -C "$REPO_DIR" remote get-url origin 2>/dev/null | grep -q "fullheart/mattpocock-skills-opencode"; then
-  echo "Cloning repository..."
-  TEMP_DIR=$(mktemp -d)
-  git clone --depth 1 https://github.com/fullheart/mattpocock-skills-opencode.git "$TEMP_DIR"
-  REPO_DIR="$TEMP_DIR"
+  # Check if we're running standalone (not from a cloned repo with the expected remote)
+  # Verify we are in the correct Git repository by checking the remote URL
+  if ! git -C "$REPO_DIR" remote get-url origin 2>/dev/null | grep -q "$REPO_SLUG"; then
+    echo "Cloning repository..."
+    CLONE_URL="${SKILLS_CLONE_URL:-https://github.com/$REPO_SLUG.git}"
+    CLONE_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/opencode/mattpocock-skills-opencode"
+    mkdir -p "$(dirname "$CLONE_DIR")"
+    if [[ ! -d "$CLONE_DIR/.git" ]]; then
+      git clone --depth 1 "$CLONE_URL" "$CLONE_DIR"
+    fi
+    REPO_DIR="$CLONE_DIR"
+  fi
 fi
 
 # Find all skill directories and create symlinks
