@@ -65,9 +65,22 @@ teardown() {
   run ./install.sh
   [ "$status" -eq 0 ]
 
+  # Count symlinks after first run
+  local first_count
+  first_count=$(find "$HOME/.config/opencode/skills" -maxdepth 1 -type l | wc -l)
+
   # Second run (should not fail)
   run ./install.sh
   [ "$status" -eq 0 ]
+
+  # Count symlinks after second run - should be the same
+  local second_count
+  second_count=$(find "$HOME/.config/opencode/skills" -maxdepth 1 -type l | wc -l)
+
+  [ "$first_count" -eq "$second_count" ]
+
+  # Assert: No nested symlinks created
+  [ ! -L "$HOME/.config/opencode/skills/tdd/tdd" ]
 
   # Assert: Skills still work
   [ -d "$HOME/.config/opencode/skills/" ]

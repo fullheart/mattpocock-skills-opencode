@@ -10,6 +10,9 @@ LOCAL_MODE=false
 
 if [[ "$1" == "--local" ]]; then
   LOCAL_MODE=true
+elif [[ $# -gt 0 ]]; then
+  echo "Usage: $(basename "$0") [--local]" >&2
+  exit 1
 fi
 
 # Determine target directory
@@ -49,8 +52,8 @@ for skill_dir in "$REPO_DIR"/*/; do
     continue
   fi
 
-  # Create symlink
-  ln -sf "$skill_dir" "$TARGET_DIR/$skill_name"
+  # Create symlink (use -n to not dereference existing symlinks)
+  ln -sfn "$skill_dir" "$TARGET_DIR/$skill_name"
 done
 
 echo "Skills installed to $TARGET_DIR"

@@ -19,11 +19,13 @@ jobs:
       - name: Run install script tests
         run: bats .tests/install.bats
 
-      - name: Verify all 17 skills exist
+      - name: Verify skill directories match SKILL.md files
         run: |
-          skill_count=$(find . -maxdepth 1 -type d -name "[a-z]*" ! -name ".*" ! -name ".tests" | wc -l)
-          echo "Found $skill_count skill directories"
-          if [ "$skill_count" -ne 17 ]; then
-            echo "Expected 17 skills, found $skill_count"
+          skill_dir_count=$(find . -maxdepth 1 -type d -name "[a-z]*" ! -name ".*" ! -name ".tests" | wc -l)
+          echo "Found $skill_dir_count skill directories"
+          skill_md_count=$(find . -type f -name "SKILL.md" | wc -l)
+          echo "Found $skill_md_count SKILL.md files"
+          if [ "$skill_dir_count" -ne "$skill_md_count" ]; then
+            echo "Mismatch between skill directories ($skill_dir_count) and SKILL.md files ($skill_md_count)"
             exit 1
           fi
