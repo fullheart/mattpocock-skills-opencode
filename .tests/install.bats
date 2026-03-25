@@ -91,6 +91,11 @@ teardown() {
 @test "install.sh validates SKILL.md exists in skill directories" {
   # Create a temporary repo with mixed content
   export TEMP_REPO=$(mktemp -d)
+  cd "$TEMP_REPO"
+
+  # Initialize as git repo with correct remote
+  git init
+  git remote add origin https://github.com/fullheart/mattpocock-skills-opencode.git
 
   # Create a valid skill directory with SKILL.md
   mkdir -p "$TEMP_REPO/valid-skill"
@@ -102,7 +107,6 @@ teardown() {
 
   # Run install script with local mode, pointing to temp repo
   export SKILLS_REPO_DIR="$TEMP_REPO"
-  cd "$TEMP_REPO"
   run "$REPO_ROOT/install.sh" --local
 
   # Assert: Script succeeds
@@ -175,4 +179,120 @@ teardown() {
 
   # Assert: Usage message is printed to stderr
   [[ "$output" == *"Usage:"* ]]
+}
+
+@test "install.sh clones repository when run standalone (not in skills repo)" {
+  # Create a temporary directory outside the repo (no git repo)
+  # Copy the script there so BASH_SOURCE[0] resolves outside the repo, triggering the clone path
+  export TEMP_DIR=$(mktemp -d)
+  cp "$REPO_ROOT/install.sh" "$TEMP_DIR/install.sh"
+  # Use a local file:// URL to avoid network access in tests
+  export SKILLS_CLONE_URL="file://$REPO_ROOT"
+  cd "$TEMP_DIR"
+
+  # Run the copied install script (BASH_SOURCE[0] resolves to TEMP_DIR, not REPO_ROOT)
+  run "$TEMP_DIR/install.sh"
+
+  # Assert: Script succeeds
+  [ "$status" -eq 0 ]
+
+  # Assert: Skills directory created
+  [ -d "$HOME/.config/opencode/skills/" ]
+
+  # Assert: At least one skill symlinked (tdd should exist)
+  [ -L "$HOME/.config/opencode/skills/tdd" ]
+
+  # Assert: Symlink points to actual directory (cloned to stable location)
+  [ -d "$HOME/.config/opencode/skills/tdd" ]
+
+  # Assert: Clone message was shown
+  [[ "$output" == *"Cloning repository"* ]]
+
+  # Cleanup (stable clone dir is under TEST_HOME and cleaned by teardown)
+  unset SKILLS_CLONE_URL
+  rm -rf "$TEMP_DIR"
+}
+
+@test "install.sh clones repository when run standalone with --local flag" {
+  # Create a temporary directory outside the repo (no git repo)
+  # Copy the script there so BASH_SOURCE[0] resolves outside the repo, triggering the clone path
+  export TEMP_DIR=$(mktemp -d)
+  cp "$REPO_ROOT/install.sh" "$TEMP_DIR/install.sh"
+  # Use a local file:// URL to avoid network access in tests
+  export SKILLS_CLONE_URL="file://$REPO_ROOT"
+  cd "$TEMP_DIR"
+
+  # Run the copied install script with --local flag
+  run "$TEMP_DIR/install.sh" --local
+
+  # Assert: Script succeeds
+  [ "$status" -eq 0 ]
+
+  # Assert: Local skills directory created
+  [ -d "$TEMP_DIR/.opencode/skills/" ]
+
+  # Assert: At least one skill symlinked locally
+  [ -L "$TEMP_DIR/.opencode/skills/tdd" ]
+
+  # Assert: Symlink points to actual directory
+  [ -d "$TEMP_DIR/.opencode/skills/tdd" ]
+
+  # Cleanup (stable clone dir is under TEST_HOME and cleaned by teardown)
+  unset SKILLS_CLONE_URL
+  rm -rf "$TEMP_DIR"
+}
+
+@test "install.sh does not clone when in correct repository" {
+  # Ensure opencode config directory exists
+  mkdir -p "$HOME/.config/opencode/"
+
+  # Run install script from within the actual repo (REPO_ROOT)
+  cd "$REPO_ROOT"
+  run ./install.sh
+
+  # Assert: Script succeeds
+  [ "$status" -eq 0 ]
+
+  # Assert: Skills directory created
+  [ -d "$HOME/.config/opencode/skills/" ]
+
+  # Assert: At least one skill symlinked
+  [ -L "$HOME/.config/opencode/skills/tdd" ]
+
+  # Assert: "Cloning repository" message should NOT appear
+  [[ "$output" != *"Cloning repository"* ]]
+}
+
+@test "install.sh clones when in different git repository" {
+  # Create a temporary directory with a git repo that has a different remote
+  # Copy the script there so BASH_SOURCE[0] resolves to that dir, triggering the clone check
+  export TEMP_DIR=$(mktemp -d)
+  cp "$REPO_ROOT/install.sh" "$TEMP_DIR/install.sh"
+  # Use a local file:// URL to avoid network access in tests
+  export SKILLS_CLONE_URL="file://$REPO_ROOT"
+  cd "$TEMP_DIR"
+  git init
+  git remote add origin https://github.com/someone/another-repo.git
+
+  # Run the copied install script - should clone because remote doesn't match
+  run "$TEMP_DIR/install.sh"
+
+  # Assert: Script succeeds
+  [ "$status" -eq 0 ]
+
+  # Assert: Skills directory created
+  [ -d "$HOME/.config/opencode/skills/" ]
+
+  # Assert: At least one skill symlinked (tdd should exist)
+  [ -L "$HOME/.config/opencode/skills/tdd" ]
+
+  # Assert: Symlink points to actual directory (cloned)
+  [ -d "$HOME/.config/opencode/skills/tdd" ]
+
+  # Assert: Clone message was shown
+  [[ "$output" == *"Cloning repository"* ]]
+
+  # Cleanup (stable clone dir is under TEST_HOME and cleaned by teardown)
+  unset SKILLS_CLONE_URL
+  rm -rf "$TEMP_DIR"
 }
