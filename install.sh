@@ -33,6 +33,15 @@ else
   REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 fi
 
+# Check if we're running standalone (not from a cloned repo)
+# Verify we are in the correct Git repository by checking the remote URL
+if ! git -C "$REPO_DIR" remote get-url origin 2>/dev/null | grep -q "fullheart/mattpocock-skills-opencode"; then
+  echo "Cloning repository..."
+  TEMP_DIR=$(mktemp -d)
+  git clone --depth 1 https://github.com/fullheart/mattpocock-skills-opencode.git "$TEMP_DIR"
+  REPO_DIR="$TEMP_DIR"
+fi
+
 # Find all skill directories and create symlinks
 for skill_dir in "$REPO_DIR"/*/; do
   # Remove trailing slash
