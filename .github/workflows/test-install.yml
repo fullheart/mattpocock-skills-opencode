@@ -1,0 +1,31 @@
+name: Test Install Script
+
+on:
+  pull_request:
+    branches:
+      - '**'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Bats
+        uses: bats-core/bats-action@1.5.4
+        with:
+          bats-version: '1.10.0'
+
+      - name: Run install script tests
+        run: bats .tests/install.bats
+
+      - name: Verify skill directories match SKILL.md files
+        run: |
+          skill_dir_count=$(find . -maxdepth 1 -type d -name "[a-z]*" ! -name ".*" ! -name ".tests" | wc -l)
+          echo "Found $skill_dir_count skill directories"
+          skill_md_count=$(find . -type f -name "SKILL.md" | wc -l)
+          echo "Found $skill_md_count SKILL.md files"
+          if [ "$skill_dir_count" -ne "$skill_md_count" ]; then
+            echo "Mismatch between skill directories ($skill_dir_count) and SKILL.md files ($skill_md_count)"
+            exit 1
+          fi
