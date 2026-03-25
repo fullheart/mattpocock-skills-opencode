@@ -165,3 +165,14 @@ teardown() {
   # Cleanup
   rm -rf "$PROJECT_DIR"
 }
+
+@test "install.sh rejects unknown arguments with usage message" {
+  # Execute install script with an invalid flag
+  run ./install.sh --unknown-flag
+
+  # Assert: Script fails with non-zero exit code
+  [ "$status" -ne 0 ]
+
+  # Assert: Usage message is printed to stderr
+  [[ "$output" == *"Usage:"* ]]
+}
