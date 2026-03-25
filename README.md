@@ -1,5 +1,8 @@
 # Agent Skills
 
+> [!NOTE]
+> **OpenCode Fork**: This is a fork of [mattpocock/skills](https://github.com/mattpocock/skills) adapted for [OpenCode](https://opencode.ai). For installation instructions and OpenCode-specific documentation, see 👉 [OPENCODE.md](./OPENCODE.md).
+
 A collection of agent skills that extend capabilities across planning, development, and tooling.
 
 ## Planning & Design
